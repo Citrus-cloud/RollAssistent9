@@ -6,6 +6,7 @@
 import { t } from '../utils/lang.js';
 import { STAT_KEYS } from '../utils/constants.js';
 import { getSavedNpcs, saveNpcList } from './npcStorage.js';
+import { hasEntityAudio, playEntityAudio, stopAudio } from './audioLibrary.js';
 
 /**
  * Render the NPC quick-view card into a container.
@@ -38,6 +39,7 @@ export function renderNpcCard(container, npc, onBack, onFullEdit, onDelete) {
       </div>
       ${weaponDisplay ? `<p class="npc-card-detail"><strong>${t('npcWeapon')}:</strong> ${weaponDisplay}</p>` : ''}
       ${appearanceDisplay ? `<p class="npc-card-detail"><strong>${t('npcAppearance')}:</strong> ${appearanceDisplay}</p>` : ''}
+      ${hasEntityAudio('npc', npc.id) ? `<div class="audio-play-section"><button class="menu-btn audio-entity-play-btn" id="npc-audio-play-btn">${t('audioTheme')}</button></div>` : ''}
     </section>
 
     <section class="card">
@@ -125,6 +127,25 @@ export function renderNpcCard(container, npc, onBack, onFullEdit, onDelete) {
       }
     }
   });
+
+  // NPC Audio play button
+  const npcAudioBtn = document.getElementById('npc-audio-play-btn');
+  if (npcAudioBtn) {
+    let _npcStopFn = null;
+    npcAudioBtn.addEventListener('click', () => {
+      if (_npcStopFn) {
+        _npcStopFn();
+        _npcStopFn = null;
+        npcAudioBtn.textContent = t('audioTheme');
+      } else {
+        const result = playEntityAudio('npc', npc.id);
+        if (result) {
+          _npcStopFn = result.stop;
+          npcAudioBtn.textContent = t('audioStop');
+        }
+      }
+    });
+  }
 }
 
 /**

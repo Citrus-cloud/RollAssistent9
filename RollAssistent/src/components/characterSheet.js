@@ -9,6 +9,8 @@ import { setupSheetFeatures, renderSubclassSection, renderAbilitySection } from 
 import { renderSkillsSection, setupSkillsEvents } from './skills.js';
 import { exportCharacterPDF } from '../utils/pdfExport.js';
 import { t } from '../utils/lang.js';
+import { hasEntityAudio, playEntityAudio, stopAudio } from './audioLibrary.js';
+import { renderAvatarEditor, setupAvatarEditorEvents, getCharacterAvatar } from './avatarManager.js';
 
 let _equipmentList = [];
 
@@ -65,6 +67,18 @@ export function renderCharacterSheetFull(spellsData) {
   html += `<div class="pdf-export-container">
     <button class="menu-btn pdf-export-btn" id="btn-export-pdf">📄 ${t('pdfExport')}</button>
   </div>`;
+
+  // Avatar editor
+  const charId = GameState.currentMainCharacter?.id;
+  const currentAvatar = charId ? getCharacterAvatar(charId) : null;
+  html += renderAvatarEditor(charId, currentAvatar);
+
+  // Audio play button (if audio is bound to this character)
+  if (charId && hasEntityAudio('character', charId)) {
+    html += `<div class="audio-play-section">
+      <button class="menu-btn audio-entity-play-btn" id="char-audio-play-btn">${t('audioTheme')}</button>
+    </div>`;
+  }
 
   // Identity
   html += `<section class="card sheet-identity">
@@ -217,6 +231,38 @@ export function renderCharacterSheetFull(spellsData) {
   setupBackpackFeatures(_equipmentList);
   setupSkillsEvents(() => renderCharacterSheetFull(spellsData));
   setupSheetEventDelegation(spellsData);
+
+  // Avatar editor events
+  const charIdForAvatar = GameState.currentMainCharacter?.id;
+  if (charIdForAvatar) {
+    setupAvatarEditorEvents(charIdForAvatar, (newDataUri) => {
+      // Update the current main character's avatar in GameState
+      if (GameState.currentMainCharacter) {
+        GameState.currentMainCharacter.avatar = newDataUri || undefined;
+        GameState.autoSave();
+      }
+      renderCharacterSheetFull(spellsData);
+    });
+  }
+
+  // Audio play button event
+  const audioPlayBtn = document.getElementById('char-audio-play-btn');
+  if (audioPlayBtn && charIdForAvatar) {
+    let _stopFn = null;
+    audioPlayBtn.addEventListener('click', () => {
+      if (_stopFn) {
+        _stopFn();
+        _stopFn = null;
+        audioPlayBtn.textContent = t('audioTheme');
+      } else {
+        const result = playEntityAudio('character', charIdForAvatar);
+        if (result) {
+          _stopFn = result.stop;
+          audioPlayBtn.textContent = t('audioStop');
+        }
+      }
+    });
+  }
 }
 
 function renderEquipmentBonusesSection() {

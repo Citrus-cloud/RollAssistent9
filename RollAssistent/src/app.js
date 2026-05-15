@@ -16,6 +16,8 @@ import { initChat, sendMessageToAI, getChatHistory } from './components/chat.js'
 import { setupCustomRaceCreator, setupCustomClassCreator, getCustomRaces, getCustomClasses, getCustomRaceDetails, getCustomClassDetails } from './components/customCreator.js';
 import { initWizard, setupWizardEvents, renderWizardProgress, renderWizardNav, resetWizard } from './components/creationWizard.js';
 import { initNpcScreen } from './components/npcList.js';
+import { renderAvatarHtml } from './components/avatarManager.js';
+import { initAudioLibrary } from './components/audioLibrary.js';
 
 // Data will be loaded from global scope (data.js, equipment.js loaded before this module)
 let races, classes, spells, equipmentList, raceDetails, classDetails;
@@ -254,6 +256,18 @@ function setupNavigation() {
     const npcContent = document.getElementById('npc-screen-content');
     initNpcScreen(npcContent, () => {
       npcScreen.classList.remove('active');
+      menuScreen.classList.add('active');
+    });
+  });
+
+  // Audio Library screen
+  document.getElementById('btn-audio').addEventListener('click', () => {
+    menuScreen.classList.remove('active');
+    const audioScreen = document.getElementById('audio-screen');
+    audioScreen.classList.add('active');
+    const audioContent = document.getElementById('audio-screen-content');
+    initAudioLibrary(audioContent, () => {
+      audioScreen.classList.remove('active');
       menuScreen.classList.add('active');
     });
   });
@@ -542,7 +556,8 @@ function updateMainCharacterCard() {
   const race = races.find(r => r.id === char.race);
   const cls = classes.find(c => c.id === char.class);
   container.style.display = 'block';
-  container.innerHTML = `<div class="mini-card" id="mini-card-clickable"><div class="mini-card-name">${char.name}</div><div class="mini-card-info">${race ? race.name : '?'} ${cls ? cls.name : '?'} (${t('sheetLevel')} ${char.level})</div><div class="mini-card-hint">${t('miniCardHint')}</div></div>`;
+  const miniAvatarHtml = renderAvatarHtml(char.id, '40px');
+  container.innerHTML = `<div class="mini-card" id="mini-card-clickable"><div class="mini-card-row">${miniAvatarHtml}<div class="mini-card-text"><div class="mini-card-name">${char.name}</div><div class="mini-card-info">${race ? race.name : '?'} ${cls ? cls.name : '?'} (${t('sheetLevel')} ${char.level})</div></div></div><div class="mini-card-hint">${t('miniCardHint')}</div></div>`;
   document.getElementById('mini-card-clickable').addEventListener('click', () => {
     GameState.loadFromState(char);
     document.getElementById('menu').classList.remove('active');
@@ -620,7 +635,8 @@ function renderCharacterList() {
     const race = races.find(r => r.id === char.race);
     const cls = classes.find(c => c.id === char.class);
     const isMain = GameState.currentMainCharacter && char.id === GameState.currentMainCharacter.id;
-    html += `<div class="saved-character-card ${isMain ? 'main-character' : ''}"><div class="char-name">${char.name}</div><div class="char-info">${race ? race.name : '?'} ${cls ? cls.name : '?'} (${t('sheetLevel')} ${char.level})</div><div class="char-actions">${isMain ? `<span class="main-badge">${t('mainBadge')}</span>` : `<button class="menu-btn set-main-btn" data-index="${index}">${t('setMain')}</button>`}<button class="menu-btn delete-btn" data-index="${index}">${t('deleteChar')}</button></div></div>`;
+    const avatarHtml = renderAvatarHtml(char.id, '48px');
+    html += `<div class="saved-character-card ${isMain ? 'main-character' : ''}"><div class="char-card-row">${avatarHtml}<div class="char-card-text"><div class="char-name">${char.name}</div><div class="char-info">${race ? race.name : '?'} ${cls ? cls.name : '?'} (${t('sheetLevel')} ${char.level})</div></div></div><div class="char-actions">${isMain ? `<span class="main-badge">${t('mainBadge')}</span>` : `<button class="menu-btn set-main-btn" data-index="${index}">${t('setMain')}</button>`}<button class="menu-btn delete-btn" data-index="${index}">${t('deleteChar')}</button></div></div>`;
   });
   html += '</div>';
   container.innerHTML = html;
